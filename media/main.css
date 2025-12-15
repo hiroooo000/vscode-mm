@@ -1,0 +1,24 @@
+@import url("MindElixir.css");
+
+body {
+    font-family: var(--vscode-font-family);
+    background-color: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#mindmap {
+    width: 100%;
+    height: 100%;
+    /* Ensure no background overrides generic inputs */
+}
+
+/* Ensure mind-elixir input box is visible */
+.mind-elixir-input,
+#input-box {
+    z-index: 99999 !important;
+}
