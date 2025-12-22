@@ -65,6 +65,40 @@
         });
     }
 
+    /**
+     * @param {string} base64
+     * @param {number} maxWidth
+     * @param {number} maxHeight
+     * @returns {Promise<string>}
+     */
+    function resizeImage(base64, maxWidth, maxHeight) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                } else {
+                    resolve(base64);
+                }
+            };
+            img.src = base64;
+        });
+    }
+
     // クリップボードからの画像貼り付け処理
     window.addEventListener('paste', (e) => {
         console.log('paste1');
@@ -81,24 +115,24 @@
         console.log('paste3');
         if (blob) {
             const reader = new FileReader();
-            reader.onload = (event) => {
-                const base64 = event.target.result;
-                console.log('base64', base64);
-                console.log('mind.currentNode', mind.currentNode);
+            reader.onload = async (event) => {
+                const base64 = /** @type {string} */ (event.target.result);
+                console.log('original base64 length:', base64.length);
+
+                // Resize image to thumbnail
+                const thumbnailBase64 = await resizeImage(base64, 200, 200);
+                console.log('thumbnail base64 length:', thumbnailBase64.length);
+
                 mind.reshapeNode(mind.currentNode, {
                     image: {
-                        url: base64,
-                        height: '100%',
-                        width: '100%'
+                        url: thumbnailBase64,
+                        height: 'auto',
+                        width: 'auto'
                     }
                 });
-                //mind.currentNode.imageTitle = 'pasted-image';
-                console.log('mind.currentNode', mind.currentNode);
+
                 mind.refresh();
-                console.log('mind.currentNode', mind.currentNode);
-                // ▼ ここで直接保存関数を呼び出す（イベント発火はしない）
                 saveChanges();
-                mind.refresh();
             };
             reader.readAsDataURL(blob);
         }
