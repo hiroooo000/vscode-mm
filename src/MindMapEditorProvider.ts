@@ -44,9 +44,8 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
                         }
                     });
                 }
-                console.log(`[Extension] Loaded ${Object.keys(images).length} images from _img.json`);
             } catch (e) {
-                console.log('[Extension] No _img.json found or failed to read');
+                // Ignore missing file
             }
 
             webviewPanel.webview.postMessage({
@@ -54,7 +53,6 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
                 text: document.getText(),
                 images: images
             });
-            console.log(`[Extension] Sent update message with ${Object.keys(images).length} images to webview`);
         }
 
         // Hook up event handlers so that we can synchronize the webview with the text document.
@@ -126,7 +124,6 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
 
         // requested format: {"image" : [{"node_id" : "BASE64"}]}
         const imageList = Object.entries(images).map(([id, data]) => ({ [id]: data }));
-        console.log(`[Extension] Saving _img.json with ${imageList.length} images`);
         const json = {
             image: imageList
         };

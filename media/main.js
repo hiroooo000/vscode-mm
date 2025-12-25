@@ -36,7 +36,6 @@
     modal.addEventListener('click', () => {
         modal.style.display = 'none';
         if (lastSelectedNode) {
-            console.log('[main.js] modal closed, restoring selection and focus');
             mind.selectNode(lastSelectedNode);
             if (mind.container) {
                 mind.container.focus();
@@ -65,11 +64,9 @@
         const message = event.data;
         switch (message.type) {
             case 'update':
-                console.log('[main.js] received update message');
                 const text = message.text;
                 if (message.images) {
                     originalImageCache = message.images;
-                    console.log('[main.js] originalImageCache updated, count:', Object.keys(originalImageCache).length);
                 }
                 if (text === lastContent) {
                     return;
@@ -192,22 +189,10 @@
                 // Resize image to thumbnail
                 const thumbnailBase64 = await resizeImage(base64, 200, 200);
 
-                // Get the actual Node ID from MindElixir node object or data attribute
-                let nodeId = mind.currentNode.nodeObj ? mind.currentNode.nodeObj.id : null;
-                if (!nodeId) {
-                    const attrId = mind.currentNode.getAttribute('data-nodeid');
-                    if (attrId) {
-                        nodeId = attrId.startsWith('me') ? attrId.substring(2) : attrId;
-                    }
-                }
+                const nodeId = mind.currentNode.nodeObj ? mind.currentNode.nodeObj.id : null;
+                if (!nodeId) return;
 
-                console.log('[main.js] pasting image into node:', nodeId);
-                if (!nodeId) {
-                    console.error('[main.js] Could not determine Node ID for pasting!');
-                    return;
-                }
                 originalImageCache[nodeId] = base64;
-                console.log('[main.js] updated originalImageCache for ID:', nodeId, 'Cache size:', Object.keys(originalImageCache).length);
 
                 mind.reshapeNode(mind.currentNode, {
                     image: {
@@ -227,16 +212,13 @@
     // Handle image click for popup
     const mindmapEl = document.getElementById('mindmap');
     if (mindmapEl) {
-        console.log('[main.js] attaching click listener to #mindmap');
         mindmapEl.addEventListener('click', (e) => {
-            console.log('[main.js] mindmap clicked', e.target);
             const target = /** @type {HTMLElement} */ (e.target);
 
             // Look for IMG tag directly or within the clicked node
             const img = target.tagName === 'IMG' ? target : target.closest('me-tpc')?.querySelector('img');
 
             if (img) {
-                console.log('[main.js] Image detected for popup:', img);
                 // Find parent node to get ID
                 let parent = img.parentElement;
                 while (parent && !parent.hasAttribute('data-nodeid')) {
@@ -245,32 +227,20 @@
                 if (parent) {
                     lastSelectedNode = /** @type {HTMLElement} */ (parent);
                     let nodeId = parent.getAttribute('data-nodeid');
-                    console.log('[main.js] found parent with nodeId:', nodeId);
                     if (nodeId) {
                         // Strip 'me' prefix if present
                         const cleanId = nodeId.startsWith('me') ? nodeId.substring(2) : nodeId;
                         const originalBase64 = originalImageCache[cleanId];
-                        console.log('[main.js] cache lookup for cleanId:', cleanId, 'Found:', !!originalBase64);
-                        if (!originalBase64) {
-                            console.log('[main.js] Cache dump:', JSON.stringify(Object.keys(originalImageCache)));
-                        }
 
                         if (originalBase64) {
                             const popupImg = /** @type {HTMLImageElement} */ (document.getElementById('popup-img'));
                             if (popupImg) {
-                                console.log('[main.js] display modal');
                                 popupImg.src = originalBase64;
                                 modal.style.display = 'flex';
                             }
-                        } else {
-                            console.warn('[main.js] image not in cache. available IDs:', Object.keys(originalImageCache));
                         }
                     }
-                } else {
-                    console.warn('[main.js] could not find parent with data-nodeid');
                 }
-            } else {
-                console.log('[main.js] element clicked does not contain an IMG');
             }
         });
     }
