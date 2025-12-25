@@ -81,10 +81,20 @@
                 try {
                     // Re-initialize with new data
                     mind.init(json);
+
+                    // Initial refresh for base structure
+                    mind.refresh();
+
+                    // If images might be present, refresh again after a short delay
+                    // to ensure node sizes are correctly calculated after Base64 rendering.
+                    if (message.images && Object.keys(message.images).length > 0) {
+                        setTimeout(() => {
+                            mind.refresh();
+                        }, 10);
+                    }
                 } catch (e) {
                     console.error("Failed to init mind map", e);
                 }
-                mind.refresh();
                 break;
         }
     });
