@@ -28,10 +28,30 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         };
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-        function updateWebview() {
+        async function updateWebview() {
+            const imagesPath = document.uri.fsPath.replace(/\.(mm|mindmap)$/, '_img.json');
+            let images = {};
+            try {
+                const imagesUri = vscode.Uri.file(imagesPath);
+                const bytes = await vscode.workspace.fs.readFile(imagesUri);
+                const json = JSON.parse(Buffer.from(bytes).toString('utf8'));
+                if (json && json.image && Array.isArray(json.image)) {
+                    // Convert array of objects back to a flat map for the webview
+                    json.image.forEach((item: any) => {
+                        const id = Object.keys(item)[0];
+                        if (id && id !== "") {
+                            Object.assign(images, item);
+                        }
+                    });
+                }
+            } catch (e) {
+                // Ignore missing file
+            }
+
             webviewPanel.webview.postMessage({
                 type: 'update',
                 text: document.getText(),
+                images: images
             });
         }
 
@@ -67,6 +87,9 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
             switch (e.type) {
                 case 'change':
                     this.updateTextDocument(document, e.text);
+                    if (e.images) {
+                        this.updateImagesFile(document, e.images);
+                    }
                     return;
             }
         });
@@ -90,6 +113,23 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         vscode.workspace.applyEdit(edit).then(() => {
             vscode.workspace.saveAll()
         });
+    }
+
+    /**
+     * Write out the images to the separate _img.json file.
+     */
+    private async updateImagesFile(document: vscode.TextDocument, images: { [key: string]: string }) {
+        const imagesPath = document.uri.fsPath.replace(/\.(mm|mindmap)$/, '_img.json');
+        const imagesUri = vscode.Uri.file(imagesPath);
+
+        // requested format: {"image" : [{"node_id" : "BASE64"}]}
+        const imageList = Object.entries(images).map(([id, data]) => ({ [id]: data }));
+        const json = {
+            image: imageList
+        };
+
+        const content = Buffer.from(JSON.stringify(json, null, 2), 'utf8');
+        await vscode.workspace.fs.writeFile(imagesUri, content);
     }
 
     /**
