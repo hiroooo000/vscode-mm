@@ -39,7 +39,7 @@ MindElixir is a flexible and fast mind map engine that handles:
 2. Select a node in the mind map.
 3. Press `Ctrl + V` (or `Cmd + V`) to paste the image into the node.
 
-## ⌨️ ショートカット
+## ⌨️ Shortcuts
 
 General shortcuts (based on MindElixir defaults):
 - `Tab`: Add a child node
@@ -47,13 +47,13 @@ General shortcuts (based on MindElixir defaults):
 - `Delete`: Remove a node
 - `Space`: Edit node text
 
-## 🛠️ 技術概要
+## 🛠️ Technical Overview
 
-- **コア**: Built as a `CustomTextEditorProvider` using the VS Code Extension API.
+- **Core**: Built as a `CustomTextEditorProvider` using the VS Code Extension API.
 - **Frontend**: Utilizes a Webview with **MindElixir** (JavaScript/TypeScript).
-- **データ形式**: Uses a JSON-based structure compatible with MindElixir.
+- **Data Format**: Uses a JSON-based structure compatible with MindElixir.
 
-## 🧪 開発
+## 🧪 Development
 
 If you want to contribute or build the project from source:
 
