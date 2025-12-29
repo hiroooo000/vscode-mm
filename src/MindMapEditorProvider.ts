@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { MindMapDataStore, ImageMap } from './MindMapDataStore';
 
 export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
 
@@ -29,21 +30,13 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
         async function updateWebview() {
-            const imagesPath = document.uri.fsPath.replace(/\.(mm|mindmap)$/, '_img.json');
-            let images = {};
+            const imagesPath = MindMapDataStore.getImagesPath(document.uri.fsPath);
+            const imagesUri = vscode.Uri.file(imagesPath);
+            let images: ImageMap = {};
             try {
-                const imagesUri = vscode.Uri.file(imagesPath);
                 const bytes = await vscode.workspace.fs.readFile(imagesUri);
                 const json = JSON.parse(Buffer.from(bytes).toString('utf8'));
-                if (json && json.image && Array.isArray(json.image)) {
-                    // Convert array of objects back to a flat map for the webview
-                    json.image.forEach((item: any) => {
-                        const id = Object.keys(item)[0];
-                        if (id && id !== "") {
-                            Object.assign(images, item);
-                        }
-                    });
-                }
+                images = MindMapDataStore.transformToWebviewImages(json);
             } catch (e) {
                 // Ignore missing file
             }
@@ -118,16 +111,10 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
     /**
      * Write out the images to the separate _img.json file.
      */
-    private async updateImagesFile(document: vscode.TextDocument, images: { [key: string]: string }) {
-        const imagesPath = document.uri.fsPath.replace(/\.(mm|mindmap)$/, '_img.json');
+    private async updateImagesFile(document: vscode.TextDocument, images: ImageMap) {
+        const imagesPath = MindMapDataStore.getImagesPath(document.uri.fsPath);
         const imagesUri = vscode.Uri.file(imagesPath);
-
-        // requested format: {"image" : [{"node_id" : "BASE64"}]}
-        const imageList = Object.entries(images).map(([id, data]) => ({ [id]: data }));
-        const json = {
-            image: imageList
-        };
-
+        const json = MindMapDataStore.transformToJsonImages(images);
         const content = Buffer.from(JSON.stringify(json, null, 2), 'utf8');
         await vscode.workspace.fs.writeFile(imagesUri, content);
     }
