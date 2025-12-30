@@ -25,17 +25,25 @@ class ImageProcessor {
                     width *= maxHeight / height;
                     height = maxHeight;
                 }
+
+                width = Math.floor(width);
+                height = Math.floor(height);
+
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    resolve({
+                        base64: canvas.toDataURL('image/jpeg', 0.8),
+                        width,
+                        height
+                    });
                 } else {
-                    resolve(base64);
+                    resolve({ base64, width, height });
                 }
             };
-            img.onerror = () => resolve(base64);
+            img.onerror = () => resolve({ base64, width: 0, height: 0 });
             img.src = base64;
         });
     }
@@ -102,6 +110,122 @@ class ImageModal {
 }
 
 /**
+ * Handles the style inspector panel.
+ */
+class StyleInspector {
+    /**
+     * @param {any} mind 
+     */
+    constructor(mind) {
+        this.mind = mind;
+        this.panel = document.getElementById('inspector');
+        this.sizeInput = /** @type {HTMLSelectElement} */ (document.getElementById('inspector-size'));
+        this.colorInput = /** @type {HTMLInputElement} */ (document.getElementById('inspector-color'));
+        this.boldBtn = document.getElementById('inspector-bold');
+        this.italicBtn = document.getElementById('inspector-italic');
+
+        this.initListeners();
+    }
+
+    initListeners() {
+        if (!this.panel) return;
+
+        this.sizeInput.addEventListener('change', () => this.updateStyle('fontSize', this.sizeInput.value));
+        this.colorInput.addEventListener('input', () => this.updateStyle('color', this.colorInput.value));
+        this.boldBtn?.addEventListener('click', () => {
+            const isBold = this.boldBtn?.classList.contains('active');
+            this.updateStyle('fontWeight', isBold ? 'normal' : 'bold');
+            this.boldBtn?.classList.toggle('active');
+        });
+        this.italicBtn?.addEventListener('click', () => {
+            const isItalic = this.italicBtn?.classList.contains('active');
+            this.updateStyle('fontStyle', isItalic ? 'normal' : 'italic');
+            this.italicBtn?.classList.toggle('active');
+        });
+
+        const swatches = this.panel.querySelectorAll('.color-swatch');
+        swatches.forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                const color = swatch.getAttribute('data-color');
+                if (color) {
+                    this.colorInput.value = color;
+                    this.updateStyle('color', color);
+                }
+            });
+        });
+    }
+
+    /**
+     * @param {string} prop 
+     * @param {string} value 
+     */
+    /**
+     * @param {string} prop 
+     * @param {string} value 
+     */
+    updateStyle(prop, value) {
+        const node = this.mind.currentNode;
+        if (!node) return;
+
+        const currentStyle = node.style || {};
+
+        // Define allowlist of style properties we care about to avoid polluting data
+        // with unrelated CSS properties if currentStyle is dirty.
+        const allowList = ['fontSize', 'color', 'fontWeight', 'fontStyle', 'background'];
+
+        const newStyle = {};
+
+        // Copy only allowlisted properties from current style
+        for (const key of allowList) {
+            if (currentStyle[key]) {
+                newStyle[key] = currentStyle[key];
+            }
+        }
+
+        // Apply the new change
+        newStyle[prop] = value;
+
+        // Clean up empty values if specifically setting to empty
+        if (value === '') {
+            delete newStyle[prop];
+        }
+
+        this.mind.reshapeNode(node, { style: newStyle });
+    }
+
+    /**
+     * @param {any} node 
+     */
+    show(node) {
+        if (!this.panel) return;
+
+        const style = node.style || {};
+
+        this.sizeInput.value = style.fontSize || '';
+        this.colorInput.value = style.color || '#000000';
+
+        if (style.fontWeight === 'bold') {
+            this.boldBtn?.classList.add('active');
+        } else {
+            this.boldBtn?.classList.remove('active');
+        }
+
+        if (style.fontStyle === 'italic') {
+            this.italicBtn?.classList.add('active');
+        } else {
+            this.italicBtn?.classList.remove('active');
+        }
+
+        this.panel.classList.add('visible');
+    }
+
+    hide() {
+        if (!this.panel) return;
+        this.panel.classList.remove('visible');
+    }
+}
+
+/**
  * Main application class for the Mind Map Webview.
  */
 class MindMapApp {
@@ -128,6 +252,7 @@ class MindMapApp {
         });
 
         this.imageModal = new ImageModal(this.lastSelectedNode, this.mind);
+        this.inspector = new StyleInspector(this.mind);
 
         this.initListeners();
     }
@@ -142,8 +267,19 @@ class MindMapApp {
         }
 
         this.mind.bus.addListener('operation', operation => this.handleOperation(operation));
-        this.mind.bus.addListener('selectNode', node => {
-            console.log('[SelectNode]', node);
+
+        // Use selectNodes as per documentation V5+
+        this.mind.bus.addListener('selectNodes', nodes => {
+            console.log('[SelectNodes]', nodes);
+            if (nodes && nodes.length > 0) {
+                // Determine which node to show. For now, just the first one.
+                // In multiple selection, maybe we shouldn't show inspector or show common styles?
+                // Let's stick to showing the first one or the last selected one if accessible.
+                // The library passes 'nodes' which is likely an array.
+                this.inspector.show(nodes[0]);
+            } else {
+                this.inspector.hide();
+            }
         });
     }
 
@@ -200,7 +336,7 @@ class MindMapApp {
             reader.onload = async (event) => {
                 if (!event.target) return;
                 const base64 = /** @type {string} */ (event.target.result);
-                const thumbnailBase64 = await ImageProcessor.resizeImage(base64, 200, 200);
+                const result = await ImageProcessor.resizeImage(base64, 200, 200);
 
                 const nodeId = this.mind.currentNode.nodeObj ? this.mind.currentNode.nodeObj.id : null;
                 if (!nodeId) return;
@@ -209,13 +345,25 @@ class MindMapApp {
 
                 this.mind.reshapeNode(this.mind.currentNode, {
                     image: {
-                        url: thumbnailBase64,
-                        height: 'auto',
-                        width: 'auto'
+                        url: result.base64,
+                        height: result.height,
+                        width: result.width
                     }
                 });
 
                 this.mind.refresh();
+
+                // Restore selection
+                if (nodeId) {
+                    const newNode = MindElixir.E(nodeId);
+                    if (newNode) {
+                        this.mind.selectNode(newNode);
+                        if (this.mind.container) {
+                            this.mind.container.focus();
+                        }
+                    }
+                }
+
                 this.saveChanges();
             };
             reader.readAsDataURL(blob);
@@ -227,6 +375,14 @@ class MindMapApp {
      */
     handleMindMapClick(e) {
         const target = /** @type {HTMLElement} */ (e.target);
+
+        // Hide inspector if clicking outside node and inspector
+        const isNode = target.closest('me-tpc');
+        const isInspector = target.closest('#inspector');
+        if (!isNode && !isInspector) {
+            this.inspector.hide();
+        }
+
         const img = target.tagName === 'IMG' ? target : target.closest('me-tpc')?.querySelector('img');
 
         if (img) {

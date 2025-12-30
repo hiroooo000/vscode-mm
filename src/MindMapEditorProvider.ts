@@ -145,6 +145,39 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
 			</head>
 			<body>
 				<div id="mindmap"></div>
+                <div id="inspector">
+                    <div class="inspector-row">
+                        <label>Size</label>
+                        <select id="inspector-size">
+                            <option value="">Default</option>
+                            <option value="12px">12</option>
+                            <option value="14px">14</option>
+                            <option value="16px">16</option>
+                            <option value="20px">20</option>
+                            <option value="24px">24</option>
+                            <option value="32px">32</option>
+                        </select>
+                    </div>
+                    <div class="inspector-row">
+                        <label>Color</label>
+                        <div class="color-picker-wrapper">
+                            <input type="color" id="inspector-color" value="#000000" />
+                            <div class="color-palette">
+                                <span class="color-swatch" data-color="#000000" style="background-color: #000000;"></span>
+                                <span class="color-swatch" data-color="#e74c3c" style="background-color: #e74c3c;"></span>
+                                <span class="color-swatch" data-color="#e67e22" style="background-color: #e67e22;"></span>
+                                <span class="color-swatch" data-color="#f1c40f" style="background-color: #f1c40f;"></span>
+                                <span class="color-swatch" data-color="#2ecc71" style="background-color: #2ecc71;"></span>
+                                <span class="color-swatch" data-color="#3498db" style="background-color: #3498db;"></span>
+                                <span class="color-swatch" data-color="#9b59b6" style="background-color: #9b59b6;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inspector-row">
+                        <button id="inspector-bold" title="Bold">B</button>
+                        <button id="inspector-italic" title="Italic">I</button>
+                    </div>
+                </div>
 				<script nonce="${nonce}" src="${mindElixirScriptUri}"></script>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
 			</body>

@@ -22,3 +22,99 @@ body {
 #input-box {
     z-index: 99999 !important;
 }
+
+/* Inspector Panel */
+#inspector {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 200px;
+    background-color: var(--vscode-sideBar-background);
+    border: 1px solid var(--vscode-sideBar-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: 10px;
+    font-size: 13px;
+    color: var(--vscode-sideBar-foreground);
+    flex-direction: column;
+    gap: 8px;
+}
+
+#inspector.visible {
+    display: flex;
+}
+
+.inspector-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.inspector-row:last-child {
+    margin-bottom: 0;
+}
+
+.inspector-row label {
+    font-weight: 500;
+}
+
+.inspector-row button {
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    flex: 1;
+    margin: 0 2px;
+}
+
+.inspector-row button:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.inspector-row button.active {
+    background-color: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+}
+
+.inspector-row select,
+.inspector-row input {
+    background-color: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 3px;
+    padding: 2px 4px;
+}
+
+.color-picker-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.color-palette {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.color-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+    border-color: var(--vscode-focusBorder);
+}
