@@ -191,6 +191,10 @@ class StyleInspector {
         }
 
         this.mind.reshapeNode(node, { style: newStyle });
+
+        if (this.mind.container) {
+            this.mind.container.focus();
+        }
     }
 
     /**
