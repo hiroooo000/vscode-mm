@@ -69,7 +69,11 @@ describe('Webview Refactoring Tests (Mocha)', () => {
             document.createElement.withArgs('canvas').returns(mockCanvas);
 
             const result = await ImageProcessor.resizeImage('data:image/jpeg;base64,original', 200, 200);
-            assert.strictEqual(result, 'data:image/jpeg;base64,resized');
+            assert.deepStrictEqual(result, {
+                base64: 'data:image/jpeg;base64,resized',
+                width: 200,
+                height: 200
+            });
             assert.strictEqual(mockCanvas.width, 200);
             assert.strictEqual(mockCanvas.height, 200);
         });
