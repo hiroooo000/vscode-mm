@@ -43,7 +43,10 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
+    "test:devcontainer": "xvfb-run -a npm test",
     "test:webview": "mocha media/main.test.js",
+    "test:all": "npm run test && npm run test:webview",
+    "test:all:devcontainer": "npm run test:devcontainer && npm run test:webview",
     "package": "vsce package",
     "build": "npm run compile && npm run package"
   },
