@@ -1,0 +1,62 @@
+name: Package Extension
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Compile
+        run: npm run compile
+
+      - name: Package Extension
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "Packaging version $VERSION from tag"
+            npx vsce package $VERSION --out vscode-mm.vsix
+          else
+            echo "Packaging from package.json version"
+            npx vsce package --out vscode-mm.vsix
+          fi
+
+      - name: Upload Artifact
+        if: startsWith(github.ref, 'refs/tags/') != true
+        uses: actions/upload-artifact@v4
+        with:
+          name: vscode-mm-vsix
+          path: vscode-mm.vsix
+          if-no-files-found: error
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: vscode-mm.vsix
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

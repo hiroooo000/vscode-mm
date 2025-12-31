@@ -2,6 +2,12 @@
   "name": "vscode-mm",
   "displayName": "Mind Map",
   "description": "Mind Map extension for VS Code",
+  "publisher": "hiroooo000",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hiroooo000/vscode-mm"
+  },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.74.0"
@@ -37,7 +43,9 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "test:webview": "mocha media/main.test.js"
+    "test:webview": "mocha media/main.test.js",
+    "package": "vsce package",
+    "build": "npm run compile && npm run package"
   },
   "devDependencies": {
     "@types/glob": "^8.0.0",
@@ -48,6 +56,7 @@
     "@typescript-eslint/parser": "^5.45.0",
     "@vitest/ui": "^4.0.16",
     "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^8.28.0",
     "glob": "^8.0.3",
     "jsdom": "^27.4.0",
