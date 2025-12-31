@@ -30,6 +30,15 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Run Webview Tests
+        run: npm run test:webview
+
+      - name: Run Extension Integration Tests
+        run: xvfb-run npm run test
+
       - name: Compile
         run: npm run compile
 
