@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 
 export interface ImageMap {
     [id: string]: string;
