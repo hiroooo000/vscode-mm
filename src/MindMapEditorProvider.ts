@@ -29,6 +29,22 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
         async function updateWebview() {
+            const text = document.getText();
+            if (text.trim().length === 0) {
+                const defaultContent = {
+                    "nodeData": {
+                        "id": "root",
+                        "topic": "Central Topic",
+                        "root": true,
+                        "children": []
+                    },
+                    "linkData": {}
+                };
+                const edit = new vscode.WorkspaceEdit();
+                edit.insert(document.uri, new vscode.Position(0, 0), JSON.stringify(defaultContent, null, 2));
+                await vscode.workspace.applyEdit(edit);
+            }
+
             const imagesPath = MindMapDataStore.getImagesPath(document.uri.fsPath);
             const imagesUri = vscode.Uri.file(imagesPath);
             let images: ImageMap = {};
