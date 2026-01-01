@@ -72,9 +72,13 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         // However, the panel itself might be destroyed and recreated if moved to background? 
         // Actually CustomTextEditor keeps the document model but the view might reload.
 
+        let isInternalUpdate = false;
+
         const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
             if (e.document.uri.toString() === document.uri.toString()) {
-                updateWebview();
+                if (!isInternalUpdate) {
+                    updateWebview();
+                }
             }
         });
 
@@ -94,7 +98,10 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.onDidReceiveMessage(e => {
             switch (e.type) {
                 case 'change':
-                    this.updateTextDocument(document, e.text);
+                    isInternalUpdate = true;
+                    this.updateTextDocument(document, e.text).then(() => {
+                        isInternalUpdate = false;
+                    });
                     if (e.images) {
                         this.updateImagesFile(document, e.images);
                     }
@@ -108,7 +115,7 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
     /**
      * Write out the json to a given document.
      */
-    private updateTextDocument(document: vscode.TextDocument, jsonStr: string) {
+    private updateTextDocument(document: vscode.TextDocument, jsonStr: string): Thenable<boolean> {
         const edit = new vscode.WorkspaceEdit();
 
         // Just replace the entire document.
@@ -118,9 +125,7 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
             jsonStr
         );
 
-        vscode.workspace.applyEdit(edit).then(() => {
-            vscode.workspace.saveAll()
-        });
+        return vscode.workspace.applyEdit(edit);
     }
 
     /**

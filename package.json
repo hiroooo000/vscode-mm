@@ -18,6 +18,10 @@
   "activationEvents": [
     "onCustomEditor:vscode-mm.mindmap"
   ],
+  "extensionKind": [
+    "ui",
+    "workspace"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "customEditors": [
