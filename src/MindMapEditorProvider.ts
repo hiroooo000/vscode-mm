@@ -52,7 +52,7 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
                 const bytes = await vscode.workspace.fs.readFile(imagesUri);
                 const json = JSON.parse(Buffer.from(bytes).toString('utf8'));
                 images = MindMapDataStore.transformToWebviewImages(json);
-            } catch (e) {
+            } catch {
                 // Ignore missing file
             }
 
