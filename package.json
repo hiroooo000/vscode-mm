@@ -3,15 +3,32 @@
   "displayName": "Mind Map",
   "description": "Mind Map extension for VS Code",
   "publisher": "hiroooo000",
+  "icon": "media/icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/hiroooo000/vscode-mm"
   },
-  "version": "0.0.1",
+  "homepage": "https://github.com/hiroooo000/vscode-mm/blob/main/README.md",
+  "bugs": {
+    "url": "https://github.com/hiroooo000/vscode-mm/issues"
+  },
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.74.0"
   },
+  "keywords": [
+    "mindmap",
+    "mind-elixir",
+    "visualization",
+    "planner",
+    "idea",
+    "brainstorm"
+  ],
   "categories": [
     "Visualization"
   ],
