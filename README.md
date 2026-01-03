@@ -29,10 +29,9 @@ MindElixir is a flexible and fast mind map engine that handles:
 > This extension is currently under development and is **not yet available on the VS Code Marketplace.**
 > To use it, you must clone the project and build it locally.
 
-1. **Setup**: Clone the repository and run `npm install` and `npm run compile`.
-2. **Create a File**: Create a new file with the `.mm` or `.mindmap` extension.
-3. **Open with Mind Map Editor**: Right-click the file and select "Open With..." and choose "Mind Map".
-4. **Start Mapping**: Use the UI or shortcuts to build your mind map.
+1. **Create a File**: Create a new file with the `.mm` or `.mindmap` extension.
+2. **Open with Mind Map Editor**: Right-click the file and select "Open With..." and choose "Mind Map".
+3. **Start Mapping**: Use the UI or shortcuts to build your mind map.
 
 ### How to Paste Images
 1. Copy an image to your clipboard.
@@ -57,6 +56,13 @@ General shortcuts (based on MindElixir defaults):
 
 If you want to contribute or build the project from source:
 
+### Dev Container
+
+This project is configured with a Dev Container.
+1. Reopen the project in a Dev Container.
+2. The environment is automatically set up with all dependencies.
+
+
 ```bash
 # Install dependencies
 npm install
@@ -65,7 +71,7 @@ npm install
 npm run compile
 
 # Run tests
-npm test
+npm run test:all:devcontainer
 ```
 
 ## 📜 License
