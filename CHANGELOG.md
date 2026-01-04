@@ -2,6 +2,15 @@
 
 All notable changes to the "vscode-mm" extension will be documented in this file.
 
+## [0.2.0] - 2026-01-04
+### Refactor
+- Refactored codebase to Clean Architecture.
+- Migrated Webview communication to TypeScript.
+
+### Technical & Chore
+- Fixed GitHub Actions errors.
+- Added documentation for Antigravity rules.
+
 ## [0.1.6] - 2026-01-04
 ### Technical & Chore
 - Update packaging workflow.
