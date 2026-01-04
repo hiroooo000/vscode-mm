@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
-import { MindMapDataStore, ImageMap } from './MindMapDataStore';
+import { MindMapService } from '../../usecases/MindMapService';
+import { VSCodeImageRepository } from './VSCodeImageRepository';
 
 export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
 
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
-        const provider = new MindMapEditorProvider(context);
+        const imageRepository = new VSCodeImageRepository();
+        const service = new MindMapService(imageRepository);
+        const provider = new MindMapEditorProvider(context, service);
         const providerRegistration = vscode.window.registerCustomEditorProvider(MindMapEditorProvider.viewType, provider);
         return providerRegistration;
     }
@@ -12,7 +15,8 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
     private static readonly viewType = 'vscode-mm.mindmap';
 
     constructor(
-        private readonly context: vscode.ExtensionContext
+        private readonly context: vscode.ExtensionContext,
+        private readonly service: MindMapService
     ) { }
 
     /**
@@ -28,50 +32,32 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         };
         webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-        async function updateWebview() {
-            const text = document.getText();
-            if (text.trim().length === 0) {
-                const defaultContent = {
-                    "nodeData": {
-                        "id": "root",
-                        "topic": "Central Topic",
-                        "root": true,
-                        "children": []
-                    },
-                    "linkData": {}
-                };
-                const edit = new vscode.WorkspaceEdit();
-                edit.insert(document.uri, new vscode.Position(0, 0), JSON.stringify(defaultContent, null, 2));
-                await vscode.workspace.applyEdit(edit);
-            }
+        const updateWebview = async () => {
+            const result = await this.service.getWebviewContent(document.getText(), document.uri.fsPath);
 
-            const imagesPath = MindMapDataStore.getImagesPath(document.uri.fsPath);
-            const imagesUri = vscode.Uri.file(imagesPath);
-            let images: ImageMap = {};
-            try {
-                const bytes = await vscode.workspace.fs.readFile(imagesUri);
-                const json = JSON.parse(Buffer.from(bytes).toString('utf8'));
-                images = MindMapDataStore.transformToWebviewImages(json);
-            } catch (e) {
-                console.error('Failed to read images file:', e);
+            // If the document was empty and default content was generated, we might need to update the document itself?
+            // The original code did: "if text empty -> edit.insert(defaultContent)"
+            // My service.getWebviewContent returns the default content string if input is empty, BUT it doesn't modify the document.
+            // The webview will receive the default content.
+            // If we want to persist the default content to the file immediately, we should check `document.getText()` here.
+
+            if (document.getText().trim().length === 0) {
+                const edit = new vscode.WorkspaceEdit();
+                edit.insert(document.uri, new vscode.Position(0, 0), result.text);
+                await vscode.workspace.applyEdit(edit);
             }
 
             webviewPanel.webview.postMessage({
                 type: 'update',
-                text: document.getText(),
-                images: images
+                text: document.getText().trim().length === 0 ? result.text : document.getText(), // Use result.text if we just inserted, or document.getText() which should be same
+                images: result.images
             });
         }
 
         // Hook up event handlers so that we can synchronize the webview with the text document.
-        //
         // The text document acts as our model, so we have to update the webview whenever it changes.
-        // 
-        // Since `retainContextWhenHidden` is not set, we also need to keep the webview alive 
-        // or re-hydrate it, but CustomTextEditorProvider simplifies this by keeping the document open.
-        // However, the panel itself might be destroyed and recreated if moved to background? 
-        // Actually CustomTextEditor keeps the document model but the view might reload.
 
+        // Use a flag to prevent infinite loops (webview update -> document update -> webview update)
         let isInternalUpdate = false;
 
         const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
@@ -95,15 +81,15 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
         });
 
         // Receive message from the webview.
-        webviewPanel.webview.onDidReceiveMessage(e => {
+        webviewPanel.webview.onDidReceiveMessage(async e => {
             switch (e.type) {
                 case 'change':
                     isInternalUpdate = true;
-                    this.updateTextDocument(document, e.text).then(() => {
-                        isInternalUpdate = false;
-                    });
+                    await this.updateTextDocument(document, e.text);
+                    isInternalUpdate = false;
+
                     if (e.images) {
-                        this.updateImagesFile(document, e.images);
+                        await this.service.saveImages(document.uri.fsPath, e.images);
                     }
                     return;
             }
@@ -129,21 +115,11 @@ export class MindMapEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     /**
-     * Write out the images to the separate _img.json file.
-     */
-    private async updateImagesFile(document: vscode.TextDocument, images: ImageMap) {
-        const imagesPath = MindMapDataStore.getImagesPath(document.uri.fsPath);
-        const imagesUri = vscode.Uri.file(imagesPath);
-        const json = MindMapDataStore.transformToJsonImages(images);
-        const content = Buffer.from(JSON.stringify(json, null, 2), 'utf8');
-        await vscode.workspace.fs.writeFile(imagesUri, content);
-    }
-
-    /**
      * Get the static html used for the editor webviews.
      */
     private getHtmlForWebview(webview: vscode.Webview): string {
         // Local path to script and css for the webview
+        // We will continue to use 'media/main.js' as the target for the bundled webview script
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'main.js'));
         const mindElixirScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'MindElixir.js'));
         const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'main.css'));

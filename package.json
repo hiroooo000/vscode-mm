@@ -39,7 +39,7 @@
     "ui",
     "workspace"
   ],
-  "main": "./out/extension.js",
+  "main": "./out/frameworks/vscode/extension.js",
   "contributes": {
     "customEditors": [
       {
@@ -59,14 +59,15 @@
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile": "tsc -p ./ && node esbuild.js",
+    "watch": "tsc -watch -p ./ & node esbuild.js --watch",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
     "test": "node ./out/test/runTest.js",
     "test:devcontainer": "xvfb-run -a npm test",
-    "test:webview": "mocha media/main.test.js",
-    "test:all": "npm run test && npm run test:webview",
+    "test:webview": "mocha out/test/webview/main.test.js",
+    "test:unit": "mocha out/test/unit/**/*.test.js",
+    "test:all": "npm run test:unit && npm run test:webview && npm run test",
     "test:all:devcontainer": "npm run test:devcontainer && npm run test:webview",
     "package": "vsce package",
     "build": "npm run compile && npm run package"
@@ -76,12 +77,14 @@
     "@types/glob": "^8.0.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^22.0.0",
+    "@types/sinon": "^21.0.0",
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "@vitest/ui": "^4.0.16",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.2",
     "eslint": "^9.0.0",
     "glob": "^11.0.0",
     "jsdom": "^27.4.0",

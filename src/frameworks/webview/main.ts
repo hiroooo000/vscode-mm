@@ -1,17 +1,85 @@
-// @ts-check
+/**
+ * Interfaces for VS Code API and MindElixir
+ */
+interface VSCodeApi {
+    postMessage(message: any): void;
+    getState(): any;
+    setState(state: any): void;
+}
+
+declare function acquireVsCodeApi(): VSCodeApi;
+
+interface MindElixirOptions {
+    el: string | HTMLElement;
+    direction?: number;
+    draggable?: boolean;
+    contextMenu?: boolean;
+    toolBar?: boolean;
+    nodeMenu?: boolean;
+    keypress?: boolean;
+    locale?: string;
+    overflowHidden?: boolean;
+    mainLinkStyle?: number; // 1: curve, 2: straight
+    subLinkStyle?: number; // 1: curve, 2: straight
+}
+
+interface NodeObj {
+    id: string;
+    topic: string;
+    root?: boolean;
+    style?: {
+        fontSize?: string;
+        color?: string;
+        fontWeight?: string;
+        fontStyle?: string;
+        background?: string;
+    };
+    image?: {
+        url: string;
+        height: number;
+        width: number;
+    };
+    children?: NodeObj[];
+}
+
+interface MindElixirInstance {
+    init(data: any): void;
+    refresh(): void;
+    getData(): any;
+    bus: {
+        addListener(event: string, callback: (payload: any) => void): void;
+    };
+    currentNode: {
+        nodeObj?: NodeObj;
+        style?: any;
+    } | null;
+    container: HTMLElement;
+    selectNode(node: HTMLElement | NodeObj): void;
+    reshapeNode(node: any, style: any): void;
+}
+
+declare const MindElixir: {
+    new(options: MindElixirOptions): MindElixirInstance;
+    RIGHTT: number;
+    E(id: string): HTMLElement | undefined;
+};
+
+// Add to window object
+declare global {
+    interface Window {
+        MindElixir: typeof MindElixir;
+        clipboardData: DataTransfer | null;
+    }
+}
 
 /**
  * Handles image processing tasks like resizing.
  */
-class ImageProcessor {
+export class ImageProcessor {
     /**
      * Resizes a base64 image to fit within maxWidth and maxHeight.
-     * @param {string} base64 
-     * @param {number} maxWidth 
-     * @param {number} maxHeight 
-     * @returns {Promise<string>}
      */
-    static async resizeImage(base64, maxWidth, maxHeight) {
+    static async resizeImage(base64: string, maxWidth: number, maxHeight: number): Promise<{ base64: string, width: number, height: number }> {
         return new Promise((resolve) => {
             const img = new Image();
             img.onload = () => {
@@ -52,14 +120,15 @@ class ImageProcessor {
 /**
  * Handles the image preview modal.
  */
-class ImageModal {
-    /**
-     * @param {HTMLElement | null} lastSelectedNode
-     * @param {any} mind
-     */
-    constructor(lastSelectedNode, mind) {
+export class ImageModal {
+    private modal: HTMLDivElement;
+    private lastSelectedNode: HTMLElement | null = null;
+
+    constructor(
+        lastSelectedNode: HTMLElement | null,
+        private readonly mind: MindElixirInstance
+    ) {
         this.lastSelectedNode = lastSelectedNode;
-        this.mind = mind;
         this.modal = document.createElement('div');
         this.init();
     }
@@ -85,13 +154,9 @@ class ImageModal {
         });
     }
 
-    /**
-     * @param {string} src
-     * @param {HTMLElement} selectedNode
-     */
-    show(src, selectedNode) {
+    show(src: string, selectedNode: HTMLElement) {
         this.lastSelectedNode = selectedNode;
-        const popupImg = /** @type {HTMLImageElement} */ (this.modal.querySelector('#popup-img'));
+        const popupImg = this.modal.querySelector('#popup-img') as HTMLImageElement;
         if (popupImg) {
             popupImg.src = src;
             this.modal.style.display = 'flex';
@@ -112,15 +177,17 @@ class ImageModal {
 /**
  * Handles the style inspector panel.
  */
-class StyleInspector {
-    /**
-     * @param {any} mind 
-     */
-    constructor(mind) {
-        this.mind = mind;
+export class StyleInspector {
+    private panel: HTMLElement | null;
+    private sizeInput: HTMLSelectElement;
+    private colorInput: HTMLInputElement;
+    private boldBtn: HTMLElement | null;
+    private italicBtn: HTMLElement | null;
+
+    constructor(private readonly mind: MindElixirInstance) {
         this.panel = document.getElementById('inspector');
-        this.sizeInput = /** @type {HTMLSelectElement} */ (document.getElementById('inspector-size'));
-        this.colorInput = /** @type {HTMLInputElement} */ (document.getElementById('inspector-color'));
+        this.sizeInput = document.getElementById('inspector-size') as HTMLSelectElement;
+        this.colorInput = document.getElementById('inspector-color') as HTMLInputElement;
         this.boldBtn = document.getElementById('inspector-bold');
         this.italicBtn = document.getElementById('inspector-italic');
 
@@ -155,27 +222,18 @@ class StyleInspector {
         });
     }
 
-    /**
-     * @param {string} prop 
-     * @param {string} value 
-     */
-    /**
-     * @param {string} prop 
-     * @param {string} value 
-     */
-    updateStyle(prop, value) {
+    updateStyle(prop: string, value: string) {
         const node = this.mind.currentNode;
         if (!node) return;
 
         const currentStyle = node.style || {};
 
-        // Define allowlist of style properties we care about to avoid polluting data
-        // with unrelated CSS properties if currentStyle is dirty.
+        // Define allowlist
         const allowList = ['fontSize', 'color', 'fontWeight', 'fontStyle', 'background'];
 
-        const newStyle = {};
+        const newStyle: any = {};
 
-        // Copy only allowlisted properties from current style
+        // Copy only allowlisted properties
         for (const key of allowList) {
             if (currentStyle[key]) {
                 newStyle[key] = currentStyle[key];
@@ -185,7 +243,7 @@ class StyleInspector {
         // Apply the new change
         newStyle[prop] = value;
 
-        // Clean up empty values if specifically setting to empty
+        // Clean up empty values
         if (value === '') {
             delete newStyle[prop];
         }
@@ -197,10 +255,7 @@ class StyleInspector {
         }
     }
 
-    /**
-     * @param {any} node 
-     */
-    show(node) {
+    show(node: any) {
         if (!this.panel) return;
 
         const style = node.style || {};
@@ -230,24 +285,26 @@ class StyleInspector {
 }
 
 /**
- * Main application class for the Mind Map Webview.
+ * Main application class
  */
-class MindMapApp {
-    /**
-     * @param {any} vscode 
-     * @param {any} MindElixir 
-     */
-    constructor(vscode, MindElixir) {
-        this.vscode = vscode;
-        this.MindElixir = MindElixir;
-        this.state = vscode.getState() || {};
-        this.originalImageCache = {};
-        this.lastContent = null;
-        this.lastSelectedNode = null;
+export class MindMapApp {
+    private state: any;
+    private originalImageCache: { [id: string]: string } = {};
+    private lastContent: string | null = null;
+    private lastSelectedNode: HTMLElement | null = null;
+    public mind: MindElixirInstance;
+    private imageModal: ImageModal;
+    private inspector: StyleInspector;
 
-        this.mind = new MindElixir({
+    constructor(
+        private readonly vscode: VSCodeApi,
+        MindElixirCtor: typeof MindElixir
+    ) {
+        this.state = vscode.getState() || {};
+
+        this.mind = new MindElixirCtor({
             el: '#mindmap',
-            direction: MindElixir.RIGHTT,
+            direction: MindElixirCtor.RIGHTT,
             draggable: true,
             contextMenu: true,
             toolBar: true,
@@ -263,23 +320,18 @@ class MindMapApp {
 
     initListeners() {
         window.addEventListener('message', event => this.handleVscodeMessage(event.data));
-        window.addEventListener('paste', e => this.handlePaste(e));
+        window.addEventListener('paste', e => this.handlePaste(e as ClipboardEvent));
 
         const mindmapEl = document.getElementById('mindmap');
         if (mindmapEl) {
             mindmapEl.addEventListener('click', e => this.handleMindMapClick(e));
         }
 
-        this.mind.bus.addListener('operation', operation => this.handleOperation(operation));
+        this.mind.bus.addListener('operation', (operation: any) => this.handleOperation(operation));
 
-        // Use selectNodes as per documentation V5+
-        this.mind.bus.addListener('selectNodes', nodes => {
+        this.mind.bus.addListener('selectNodes', (nodes: any) => {
             console.log('[SelectNodes]', nodes);
             if (nodes && nodes.length > 0) {
-                // Determine which node to show. For now, just the first one.
-                // In multiple selection, maybe we shouldn't show inspector or show common styles?
-                // Let's stick to showing the first one or the last selected one if accessible.
-                // The library passes 'nodes' which is likely an array.
                 this.inspector.show(nodes[0]);
             } else {
                 this.inspector.hide();
@@ -287,12 +339,9 @@ class MindMapApp {
         });
     }
 
-    /**
-     * @param {any} message 
-     */
-    handleVscodeMessage(message) {
+    handleVscodeMessage(message: any) {
         switch (message.type) {
-            case 'update':
+            case 'update': {
                 const text = message.text;
                 if (message.images) {
                     this.originalImageCache = message.images;
@@ -319,16 +368,16 @@ class MindMapApp {
                     console.error("Failed to init mind map", e);
                 }
                 break;
+            }
         }
     }
 
-    /**
-     * @param {ClipboardEvent} e 
-     */
-    async handlePaste(e) {
+    async handlePaste(e: ClipboardEvent) {
         if (!this.mind.currentNode) return;
-        const items = (e.clipboardData || window['clipboardData']).items;
-        let blob = null;
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        let blob: File | null = null;
         for (let i = 0; i < items.length; i++) {
             if (items[i].type.indexOf('image/') !== -1) {
                 blob = items[i].getAsFile();
@@ -339,10 +388,10 @@ class MindMapApp {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 if (!event.target) return;
-                const base64 = /** @type {string} */ (event.target.result);
+                const base64 = event.target.result as string;
                 const result = await ImageProcessor.resizeImage(base64, 200, 200);
 
-                const nodeId = this.mind.currentNode.nodeObj ? this.mind.currentNode.nodeObj.id : null;
+                const nodeId = this.mind.currentNode?.nodeObj ? this.mind.currentNode.nodeObj.id : null;
                 if (!nodeId) return;
 
                 this.originalImageCache[nodeId] = base64;
@@ -374,13 +423,9 @@ class MindMapApp {
         }
     }
 
-    /**
-     * @param {MouseEvent} e 
-     */
-    handleMindMapClick(e) {
-        const target = /** @type {HTMLElement} */ (e.target);
+    handleMindMapClick(e: MouseEvent) {
+        const target = e.target as HTMLElement;
 
-        // Hide inspector if clicking outside node and inspector
         const isNode = target.closest('me-tpc');
         const isInspector = target.closest('#inspector');
         if (!isNode && !isInspector) {
@@ -390,7 +435,7 @@ class MindMapApp {
         const img = target.tagName === 'IMG' ? target : target.closest('me-tpc')?.querySelector('img');
 
         if (img) {
-            let parent = img.parentElement;
+            let parent: HTMLElement | null = img.parentElement;
             while (parent && !parent.hasAttribute('data-nodeid')) {
                 parent = parent.parentElement;
             }
@@ -400,22 +445,19 @@ class MindMapApp {
                     const cleanId = nodeId.startsWith('me') ? nodeId.substring(2) : nodeId;
                     const originalBase64 = this.originalImageCache[cleanId];
                     if (originalBase64) {
-                        this.imageModal.show(originalBase64, /** @type {HTMLElement} */(parent));
+                        this.imageModal.show(originalBase64, parent);
                     }
                 }
             }
         }
     }
 
-    /**
-     * @param {any} operation 
-     */
-    handleOperation(operation) {
+    handleOperation(operation: any) {
         console.log('[MindElixir Operation]', operation);
         if (operation.name === 'removeNodes') {
-            /** @type {any[]} */ (operation.objs).forEach(obj => {
-            delete this.originalImageCache[obj.id];
-        });
+            (operation.objs as any[]).forEach((obj: any) => {
+                delete this.originalImageCache[obj.id];
+            });
         }
         this.saveChanges();
     }
@@ -433,17 +475,11 @@ class MindMapApp {
 }
 
 // Script run within the webview
-(function () {
-    if (typeof acquireVsCodeApi !== 'undefined') {
-        const vscode = acquireVsCodeApi();
-        // @ts-ignore
-        const MindElixir = window.MindElixir;
-        new MindMapApp(vscode, MindElixir);
+if (typeof acquireVsCodeApi !== 'undefined') {
+    const vscode = acquireVsCodeApi();
+    // Use window.MindElixir which is loaded via script tag
+    // Ensure MindElixir is available
+    if (window.MindElixir) {
+        new MindMapApp(vscode, window.MindElixir);
     }
-})();
-
-// Export for testing
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ImageProcessor, ImageModal, MindMapApp };
 }
-
