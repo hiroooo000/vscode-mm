@@ -50,10 +50,10 @@ jobs:
           if [[ $GITHUB_REF == refs/tags/v* ]]; then
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "Packaging version $VERSION from tag"
-            npx vsce package $VERSION --out vscode-mm.vsix
+            npx vsce package $VERSION --no-dependencies --out vscode-mm.vsix
           else
             echo "Packaging from package.json version"
-            npx vsce package --out vscode-mm.vsix
+            npx vsce package --no-dependencies --out vscode-mm.vsix
           fi
 
       - name: Upload Artifact
