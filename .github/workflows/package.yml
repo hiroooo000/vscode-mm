@@ -36,14 +36,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run Webview Tests
-        run: npm run test:webview
+      - name: Run Unit & Webview Tests
+        run: |
+          npm run test:unit
+          npm run test:webview
 
       - name: Run Extension Integration Tests
         run: xvfb-run npm run test
 
       - name: Compile
-        run: npm run compile
+        run: npm run compile -- --production
 
       - name: Package Extension
         run: |
