@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-mm" extension will be documented in this file.
 
+## [0.1.6] - 2026-01-04
+### Technical & Chore
+- Update packaging workflow.
+
 ## [0.1.5] - 2026-01-04
 ### Technical & Chore
 - Version bump for verification.
