@@ -36,6 +36,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Compile
+        run: npm run compile
+      
       - name: Run Unit & Webview Tests
         run: |
           npm run test:unit
@@ -44,7 +47,7 @@ jobs:
       - name: Run Extension Integration Tests
         run: xvfb-run npm run test
 
-      - name: Compile
+      - name: Compile for production
         run: npm run compile -- --production
 
       - name: Package Extension
