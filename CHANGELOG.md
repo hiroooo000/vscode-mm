@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-mm" extension will be documented in this file.
 
+## [0.1.4] - 2026-01-04
+### Technical & Chore
+- Version bump for verification.
+
 ## [0.1.3] - 2026-01-04
 ### Technical & Chore
 - Fixed packaging workflow to properly append version number to the VSIX filename.
