@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-mm" extension will be documented in this file.
 
+## [0.1.2] - 2026-01-04
+### Technical & Chore
+- Fixed packaging workflow to exclude dependencies (`--no-dependencies`).
+
 ## [0.1.0] - 2026-01-03
 ### Features
 - Initial release of VS Code Mind Map.
