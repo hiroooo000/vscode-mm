@@ -164,7 +164,9 @@ describe('Webview Refactoring Tests (TypeScript)', () => {
                 refresh: sinon.spy(),
                 getData: sinon.stub().returns({ data: 'test' }),
                 currentNode: null,
-                reshapeNode: sinon.spy()
+                reshapeNode: sinon.spy(),
+                selectNode: sinon.spy(),
+                container: { focus: sinon.spy() }
             });
             mindElixirMock.RIGHTT = 1;
             mindElixirMock.E = sinon.stub();
@@ -178,6 +180,7 @@ describe('Webview Refactoring Tests (TypeScript)', () => {
             (global as any).document.getElementById.withArgs('mindmap').returns(mockDiv);
             (global as any).document.createElement.withArgs('div').returns(mockDiv);
 
+            (global as any).MindElixir = mindElixirMock;
             app = new MindMapApp(vscodeMock, mindElixirMock);
         });
 
@@ -196,6 +199,28 @@ describe('Webview Refactoring Tests (TypeScript)', () => {
             assert.deepStrictEqual((app as any).originalImageCache, { "1": "base64" });
             assert.ok((app.mind.init as any).calledWith({ data: "new" }));
             assert.ok((app.mind.refresh as any).called);
+        });
+
+        it('should restore previous selection on update', () => {
+            // Setup initial selection
+            const selectedNodeId = 'me123';
+            app.mind.currentNode = {
+                nodeObj: { id: selectedNodeId, topic: 'Selected' },
+                style: {}
+            };
+
+            // Mock MindElixir.E to return an element when queried
+            const mockNodeElement = { id: selectedNodeId };
+            mindElixirMock.E.withArgs(selectedNodeId).returns(mockNodeElement);
+
+            const message = { type: 'update', text: '{}' };
+
+            // Act
+            (app as any).handleVscodeMessage(message);
+
+            // Assert
+            assert.ok((app.mind.selectNode as any).calledWith(mockNodeElement), 'selectNode should be called with the restored node element');
+            assert.ok((app.mind.container.focus as any).called, 'container should be focused');
         });
     });
 });

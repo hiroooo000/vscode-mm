@@ -349,6 +349,9 @@ export class MindMapApp {
                 if (text === this.lastContent) {
                     return;
                 }
+
+                const selectedNodeId = this.mind.currentNode && this.mind.currentNode.nodeObj ? this.mind.currentNode.nodeObj.id : null;
+
                 let json;
                 try {
                     json = JSON.parse(text);
@@ -359,6 +362,17 @@ export class MindMapApp {
                 try {
                     this.mind.init(json);
                     this.mind.refresh();
+
+                    if (selectedNodeId) {
+                        const newNode = MindElixir.E(selectedNodeId);
+                        if (newNode) {
+                            this.mind.selectNode(newNode);
+                            if (this.mind.container) {
+                                this.mind.container.focus();
+                            }
+                        }
+                    }
+
                     if (message.images && Object.keys(message.images).length > 0) {
                         setTimeout(() => {
                             this.mind.refresh();
