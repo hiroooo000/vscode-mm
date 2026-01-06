@@ -2,6 +2,10 @@
 
 All notable changes to the "vscode-mm" extension will be documented in this file.
 
+## [0.2.1] - 2026-01-06
+### Bug Fixes
+- Fix #15: Restore selection after save.
+
 ## [0.2.0] - 2026-01-04
 ### Refactor
 - Refactored codebase to Clean Architecture.
